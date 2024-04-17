@@ -1,0 +1,22 @@
+# tasks file
+---
+- name: private-keys | Add
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ '~/' + ssh_keys_sshdir + '/' + (item.src | basename) }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group | default(item.owner) }}"
+    mode: "{{ item.mode | default('0600') }}"
+  with_items: "{{ ssh_keys_generate_keys }}"
+  when: item.state is undefined or item.state == 'present'
+  tags:
+    - ssh-keys-private-keys-add
+
+- name: private-keys | Remove
+  ansible.builtin.file:
+    path: "{{ item.dest_absolute | default('~' + item.owner + '/' + ssh_keys_sshdir + '/' + (item.dest | default(item.src | basename))) }}"
+    state: absent
+  with_items: "{{ ssh_keys_generate_keys }}"
+  when: item.state is defined and item.state == 'absent'
+  tags:
+    - ssh-keys-private-keys-remove

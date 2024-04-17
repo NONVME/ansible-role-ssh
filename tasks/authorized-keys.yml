@@ -1,0 +1,10 @@
+# tasks file
+---
+- name: authorized-keys | Authorized-keys | set up for users in host
+  ansible.posix.authorized_key:
+    user: "{{ item.username }}"
+    key: "{{ lookup('file', item.ssh.path + ssh_keys_public_key_filename) }}"
+    path: "{{ item.home | default('/home/' + item.username) }}/{{ authorized_keys_file }}"
+  with_items: "{{ user }}"
+  tags:
+    ssh-keys-authorized-keys-setup

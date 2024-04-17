@@ -1,0 +1,72 @@
+# tasks file
+---
+- name: generate | Generate
+  delegate_to: localhost
+  become: "{{ ssh_keys_generate_keys_become }}"
+  block:
+    - name: generate | Create ssh key generation directory
+      ansible.builtin.file:
+        path: "{{ item.ssh.path | dirname }}"
+        # owner: "{{ item.owner }}"
+        # group: "{{ item.group | default(item.owner) }}"
+        mode: 0700
+        state: directory
+      with_items: "{{ users }}"
+      when: item.username is not search(user_app_postfix + '$')
+      tags:
+        - ssh-keys-generate-directories
+
+    - name: generate | Generate private key with RSA and with passphrase
+      community.crypto.openssl_privatekey:
+        path: "{{ item.ssh.path + ssh_keys_private_key_filename }}"
+        type: "{{ ssh_keys_private_key_type | default(RSA) }}"
+        size: "{{ ssh_keys_private_key_size | default(4096) }}"
+        passphrase: "{{ ssh_keys_private_key_passphrase }}"
+        cipher: auto
+        # owner: "{{ item.owner }}"
+        # group: "{{ item.group | default(item.owner) }}"
+      with_items: "{{ users }}"
+      when: ssh_keys_private_key_passphrase != ""
+      tags:
+        - ssh-keys-generate-private-keys
+
+    - name: generate | Generate private key with RSA and without passphrase
+      community.crypto.openssl_privatekey:
+        path: "{{ item.ssh.path + ssh_keys_private_key_filename }}"
+        type: "{{ ssh_keys_private_key_type | default(RSA) }}"
+        size: "{{ ssh_keys_private_key_size | default(4096) }}"
+        # owner: "{{ item.owner }}"
+        # group: "{{ item.group | default(item.owner) }}"
+      with_items: "{{ users }}"
+      when: ssh_keys_private_key_passphrase == ""
+      tags:
+        - ssh-keys-generate-private-keys
+
+    - name: generate | Generate public ssh key with passphrase
+      community.crypto.openssl_publickey:
+        path: "{{ item.ssh.path + ssh_keys_public_key_filename }}"
+        force: "{{ item.force | default(false) }}"
+        format: "{{ item.format | default('OpenSSH') }}"
+        # owner: "{{ item.owner }}"
+        # group: "{{ item.group | default(item.owner) }}"
+        mode: "{{ item.mode | default('0600') }}"
+        privatekey_passphrase: "{{ ssh_keys_private_key_passphrase }}"
+        privatekey_path: "{{ item.ssh.path + ssh_keys_private_key_filename }}"
+      with_items: "{{ users }}"
+      when: ssh_keys_private_key_passphrase != ""
+      tags:
+        - ssh-keys-generate-public-keys
+
+    - name: generate | Generate public ssh key without passphrase
+      community.crypto.openssl_publickey:
+        path: "{{ item.ssh.path + ssh_keys_public_key_filename }}"
+        force: "{{ item.force | default(false) }}"
+        format: "{{ item.format | default('OpenSSH') }}"
+        # owner: "{{ item.owner }}"
+        # group: "{{ item.group | default(item.owner) }}"
+        mode: "{{ item.mode | default('0600') }}"
+        privatekey_path: "{{ item.ssh.path + ssh_keys_private_key_filename }}"
+      with_items: "{{ users }}"
+      when: ssh_keys_private_key_passphrase == ""
+      tags:
+        - ssh-keys-generate-public-keys

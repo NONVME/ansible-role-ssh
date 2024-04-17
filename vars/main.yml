@@ -1,0 +1,24 @@
+# vars file
+---
+ssh_keys_sshdir: '.ssh'
+ssh_keys_private_key_filename: 'id_rsa'
+ssh_keys_private_key_type: "RSA"
+ssh_keys_private_key_size: 4096
+ssh_keys_private_key_passphrase: ""
+ssh_keys_public_key_filename: 'id_rsa.pub'
+
+security_ssh_config_path: "/etc/ssh/sshd_config"
+security_ssh_port: 22
+security_ssh_password_authentication: "no"
+security_ssh_permit_root_login: "no"
+security_ssh_usedns: "no"
+security_ssh_permit_empty_password: "no"
+security_ssh_challenge_response_auth: "no"
+security_ssh_gss_api_authentication: "no"
+security_ssh_x11_forwarding: "no"
+security_ssh_restart_handler_state: restarted
+
+security_sshd_state: started
+security_sshd_name: "ssh"
+
+security_ssh_allowed_groups: []
