@@ -8,7 +8,6 @@ ssh_keys_private_key_passphrase: ""
 ssh_keys_public_key_filename: 'id_rsa.pub'
 
 security_ssh_config_path: "/etc/ssh/sshd_config"
-security_ssh_port: 22
 security_ssh_password_authentication: "no"
 security_ssh_permit_root_login: "no"
 security_ssh_usedns: "no"

@@ -1,4 +1,5 @@
 # defaults file
 ---
 ssh_keys_generate_keys_become: false
-
+authorized_keys_file: ".ssh/authorized_keys"
+security_ssh_port: 22

@@ -54,3 +54,569 @@
     mode: 0644
   when: security_ssh_allowed_groups | length > 0
   notify: restart ssh
+
+
+# # If you want to deploy your own SSH config file, exclude the entire 5.2.0 tag
+# - name: 5.2 - SSH File configurations
+#   tags:
+#     - 5.2.0
+#   block:
+#     - name: 5.2.1 - Set permissions on SSH file
+#       ansible.builtin.file:
+#         dest: /etc/ssh/sshd_config
+#         owner: root
+#         group: root
+#         mode: 0600
+#       tags:
+#         - 5.2.1
+#
+#     - name: 5.2.2 - Set Permissions on ssh private host keys
+#       tags:
+#         - 5.2.2
+#       block:
+#         - name: 5.2.2 - Find all ssh private host keys
+#           ansible.builtin.find:
+#             paths: /etc/ssh
+#             file_type: file
+#             patterns: ssh_host_*_key
+#           register: ssh_host_out
+#           changed_when: false
+#
+#         - name: 5.2.2 - Set permissions on all ssh private host keys (Red Hat set the group to ssh_keys and mode to 640)
+#           ansible.builtin.file:
+#             dest: "{{ item.path }}"
+#             owner: root
+#             group: root
+#             mode: 0600
+#           loop: "{{ ssh_host_out.files }}"
+#
+#     - name: 5.2.3 - Set Permissions on ssh public host keys
+#       tags:
+#         - 5.2.3
+#       block:
+#         - name: 5.2.3 - Find all ssh public host keys
+#           ansible.builtin.find:
+#             paths: /etc/ssh
+#             file_type: file
+#             patterns: ssh_host_*_key.pub
+#           register: ssh_hostpub_out
+#           changed_when: false
+#
+#         - name: 5.2.3 - Set permissions on all ssh public host keys
+#           ansible.builtin.file:
+#             dest: "{{ item.path }}"
+#             owner: root
+#             group: root
+#             mode: 0644
+#           loop: "{{ ssh_hostpub_out.files }}"
+#
+#     - name: 5.2.4 - Ensure SSH access is limited
+#       tags:
+#         - 5.2.4
+#       block:
+#         - name: 5.2.4 - Ensure SSH access is limited (AllowedUsers)
+#           ansible.builtin.lineinfile:
+#             path: "/etc/ssh/sshd_config"
+#             regexp: ^{{ item.key }}\ *{{ item.value }}
+#             line: "{{ item.key }}  {{ item.value }}"
+#           notify: Restart sshd
+#           loop:
+#             - { key: 'AllowUsers', value: "{{ ssh_allowed_users }}" }
+#           when: ssh_allowed_users is defined and ssh_allowed_users
+#
+#         - name: 5.2.4 - Ensure SSH access is limited (AllowGroups)
+#           ansible.builtin.lineinfile:
+#             path: "/etc/ssh/sshd_config"
+#             regexp: ^{{ item.key }}\ *{{ item.value }}
+#             line: "{{ item.key }}  {{ item.value }}"
+#           notify: Restart sshd
+#           loop:
+#             - { key: 'AllowGroups', value: "{{ ssh_allowed_groups }}" }
+#           when: ssh_allowed_groups is defined and ssh_allowed_groups
+#
+#         - name: 5.2.4 - Ensure SSH access is limited (DenyUsers)
+#           ansible.builtin.lineinfile:
+#             path: "/etc/ssh/sshd_config"
+#             regexp: "^{{ item.key }}\ *{{ item.value }}"
+#             line: "{{ item.key }}  {{ item.value }}"
+#           loop:
+#             - { key: 'DenyUsers', value: "{{ ssh_denied_users }}" }
+#           notify: Restart sshd
+#           when: ssh_denied_users is defined and ssh_denied_users
+#
+#         - name: 5.2.4 - Ensure SSH access is limited (DenyGroups)
+#           ansible.builtin.lineinfile:
+#             path: "/etc/ssh/sshd_config"
+#             regexp: ^{{ item.key }}\ *{{ item.value }}
+#             line: "{{ item.key }}  {{ item.value }}"
+#           notify: Restart sshd
+#           loop:
+#             - { key: 'DenyGroups', value: "{{ ssh_denied_groups }}" }
+#           when: ssh_denied_groups is defined and ssh_denied_groups
+#
+#     - name: 5.2.5 - Set LogLevel to {{ ssh_log_level }}
+#       ansible.builtin.replace:
+#         path: /etc/ssh/sshd_config
+#         replace: "LogLevel {{ ssh_log_level | upper }}"
+#         regexp: '^LogLevel\s*(QUIET|FATAL|ERROR|DEBUG)*$'
+#       notify: Restart sshd
+#       when: ssh_log_level == "INFO" or ssh_log_level == "WARN"
+#       tags:
+#         - 5.2.5
+#
+#     - name: 5.2.6 - Ensure SSH is configured to use PAM
+#       ansible.builtin.lineinfile:
+#         path: "/etc/ssh/sshd_config"
+#         line: "UsePAM yes"
+#         regexp: '^UsePAM\s+[yes|no]'
+#         insertafter: "#UsePAM"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.6
+#
+#     - name: 5.2.7 - Ensure PermitRootLogin is disbled
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "PermitRootLogin no"
+#         regexp: '^PermitRootLogin\s*[^n]'
+#         insertafter: '^#PermitRootLogin\s*[^n]'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.7
+#
+#     - name: 5.2.8 - Ensure HostbasedAuthentication is disabled
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "HostbasedAuthentication no"
+#         regexp: '^HostbasedAuthentication\s*[^n]'
+#         insertafter: '^#HostbasedAuthentication\s*[^n]'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.8
+#
+#     - name: 5.2.9 - Ensure SSH PermitEmptyPasswords is disabled
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         state: absent
+#         regexp: '^PermitEmptyPasswords\s*[^n]'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.9
+#
+#     - name: 5.2.10 - Ensure PermitUserEnvironment is disabled
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         state: absent
+#         regexp: '^PermitUserEnvironment\s*[^n]'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.10
+#
+#     - name: 5.2.11 - Ensure IgnoreRhosts is set
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "IgnoreRhosts yes"
+#         regexp: '^IgnoreRhosts\s*[^y]'
+#         insertafter: '^#IgnoreRhosts\s*[^y]'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.11
+#
+#     - name: 5.2.12 - Disable X11 forwarding
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         regexp: '^X11Forwarding\s*yes'
+#         state: absent
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.12
+#
+#     - name: 5.2.13 - Ensure correct cipherlist
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "Ciphers {{ ssh_ciphers_list }}"
+#         regexp: '^Ciphers ((?!{{ ssh_ciphers_list }}).)*$ '
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.13
+#
+#     - name: 5.2.14 -  Set approved MAC algorithms
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "MACs {{ ssh_mac_list }}"
+#         insertafter: EOF
+#         regexp: '^MACs ((?!{{ ssh_mac_list }}).)*$ '
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.14
+#
+# #    - name: 5.2.15 -  Set approved KEX algorithms
+# #      ansible.builtin.lineinfile:
+# #        path: /etc/ssh/sshd_config
+# #        line: "KexAlgorithms {{ ssh_kex_list }}"
+# #        insertafter: EOF
+# #        regexp: '^KexAlgorithms ((?!{{ ssh_kex_list }}).)*$ '
+# #      notify: Restart sshd
+# #      tags:
+# #        - 5.2.15
+#
+#     - name: 5.2.16 - Disable TCP Forwarding
+#       ansible.builtin.lineinfile:
+#         path: "/etc/ssh/sshd_config"
+#         line: "AllowTcpForwarding no"
+#         regexp: '^AllowTcpForwarding\s+(yes|no)'
+#         insertafter: "^#AllowTcpForwarding"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.16
+#
+#     - name: 5.2.17 - Ensure SSH Banner is configured
+#       ansible.builtin.lineinfile:
+#         path: "/etc/ssh/sshd_config"
+#         line: "Banner /etc/{{ ssh_login_banner }}"
+#         regexp: "^Banner /etc/{{ ssh_login_banner }}"
+#         insertafter: "^#Banner none"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.17
+#
+#     - name: 5.2.18 - Ensure SSH MaxAuthTires is set to {{ ssh_max_auth_tries }}
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "MaxAuthTries {{ ssh_max_auth_tries }}"
+#         regexp: '^MaxAuthTries\s*[^1-{{ ssh_max_auth_tries | int + 1 }}]'
+#         insertafter: "^#MaxAuthTries"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.18
+#
+#     - name: 5.2.19 - Limit max unauthenticated startups
+#       ansible.builtin.lineinfile:
+#         path: "/etc/ssh/sshd_config"
+#         line: "MaxStartups 10:30:60"
+#         regexp: '^MaxStartups\s+10:30:60'
+#         insertafter: '^#MaxStartups\s+10:30:100'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.19
+#
+#     - name: 5.2.20 - Ensure SSH LoginGraceTime is set to {{ ssh_grace_time }}
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "LoginGraceTime {{ ssh_grace_time }}"
+#         regexp: "^LoginGraceTime {{ ssh_grace_time }}"
+#         insertafter: "^#LoginGraceTime"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.20
+#
+#     - name: 5.2.21 - Limit max sessions to {{ ssh_max_sessions }}
+#       ansible.builtin.lineinfile:
+#         path: "/etc/ssh/sshd_config"
+#         line: "MaxSessions {{ ssh_max_sessions }}"
+#         regexp: '^MaxSessions\s+[{{ ssh_max_sessions }}]'
+#         insertafter: '^#MaxSessions\s+10'
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.21
+#
+#     - name: 5.2.22 - Ensure SSH Idle Timeout is configured ClientAliveInterval
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "ClientAliveInterval {{ ssh_alive_interval }}"
+#         regexp: "^ClientAliveInterval {{ ssh_alive_interval }}"
+#         insertafter: "^#ClientAliveInterval"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.22
+#
+#     - name: 5.2.22 - Ensure SSH Idle Timeout is configured ClientAliveCountMax
+#       ansible.builtin.lineinfile:
+#         path: /etc/ssh/sshd_config
+#         line: "ClientAliveCountMax {{ ssh_alive_count_max }}"
+#         regexp: "^ClientAliveCountMax {{ ssh_alive_count_max }}"
+#         insertafter: "^#ClientAliveCountMax"
+#       notify: Restart sshd
+#       tags:
+#         - 5.2.22
+#
+# # use the system package module to ensure sudo is installed
+# - name: 5.3 - Configure sudo/su
+#   tags:
+#     - 5.3.0
+#   block:
+#     - name: 5.3.1 - Ensure sudo is installed
+#       ansible.builtin.package:
+#         name: sudo
+#         state: present
+#       tags:
+#         - 5.3.1
+#
+#     # Make sure the sudoers file includes the requirement to use pty
+#     - name: 5.3.2 - Ensure sudo commands use pty
+#       ansible.builtin.lineinfile:
+#         path: /etc/sudoers
+#         regexp: '^Defaults\s*use_pty'
+#         line: "Defaults use_pty"
+#         insertafter: "^# Defaults specification"
+#         validate: /usr/sbin/visudo -cf %s
+#       tags:
+#         - 5.3.2
+#
+#     # Make sure the sudoers file includes the requirement to log to a file
+#     - name: 5.3.3 - Ensure sudo log file exists
+#       ansible.builtin.lineinfile:
+#         path: /etc/sudoers
+#         regexp: '^Defaults\s*logfile="{{ sudo_log }}"'
+#         line: 'Defaults logfile="{{ sudo_log }}"'
+#         insertafter: "^# Defaults specification"
+#         validate: /usr/sbin/visudo -cf %s
+#       tags:
+#         - 5.3.3
+#
+#     # 5.3.4 - Ensure users must provide passwords for priv escalation will
+#     #  break ansible, skipped
+#
+#     - name: 5.3.5 - Ensure reauthticate for priv escalation is not enabled globally
+#       ansible.builtin.replace:
+#         path: /etc/sudoers
+#         regexp: '^[^#].*\!authenticate'
+#         replace: ""
+#         validate: /usr/sbin/visudo -cf %s
+#       tags:
+#         - 5.3.5
+#
+#     # 5.3.6 - sudo timeout is hard to set via ansible, skipping
+#
+#     - name: 5.3.7 - Restrict su to wheel group
+#       tags:
+#         - 5.3.7
+#       block:
+#         - name: 5.3.7 - Configure PAM to only allow su from wheel group
+#           ansible.builtin.replace:
+#             path: /etc/pam.d/su
+#             regexp: '^#\s*auth\s+required\s+pam_wheel.so'
+#             replace: "auth         required        pam_wheel.so"
+#
+#         - name: 5.3.7 - Create wheel group if it doesn't exist
+#           ansible.builtin.group:
+#             name: wheel
+#             system: true
+#             state: present
+#
+#         - name: 5.3.7 - Add root to the wheel group
+#           ansible.builtin.user:
+#             name: root
+#             groups: wheel
+#             append: true
+#
+# - name: 5.4.0 - Configure PAM files and password requirements
+#   tags:
+#     - 5.4.0
+#   block:
+#     - name: 5.4.1 - Configure PAM files and password requirements
+#       ansible.builtin.package:
+#         name: libpam-pwquality
+#         state: present
+#       tags:
+#         - 5.4.1
+#         - 5.4.2
+#
+#     - name: 5.4.1 - require at least one digit in passwords
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/pwquality.conf
+#         line: dcredit = -1
+#         regexp: "^dcredit = -1"
+#         insertafter: "# dcredit = 0"
+#       when: password_req_digit
+#       tags:
+#         - 5.4.1
+#
+#     - name: 5.4.1 - require at least one uppercase letter in passwords
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/pwquality.conf
+#         line: ucredit = -1
+#         regexp: "^ucredit = -1"
+#         insertafter: "# ucredit = 0"
+#       when: password_req_upper
+#       tags:
+#         - 5.4.1
+#
+#     - name: 5.4.1 - require at least one lowercase letter in passwords
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/pwquality.conf
+#         line: lcredit = -1
+#         regexp: "^lcredit = -1"
+#         insertafter: "^# lcredit = 0"
+#       when: password_req_lower
+#       tags:
+#         - 5.4.1
+#
+#     - name: 5.4.1 - Require at least one special character in passwords
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/pwquality.conf
+#         line: ocredit = -1
+#         regexp: "^ocredit = -1"
+#         insertafter: "^# ocredit = 0"
+#       when: password_req_digit
+#       tags:
+#         - 5.4.1
+#
+#     - name: 5.4.2 - Require at least {{ password_min_length }} characters in passwords
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/pwquality.conf
+#         line: minlen = {{ password_min_length }}
+#         regexp: "^minlen = {{ password_min_length }}"
+#         insertafter: "^# minlen = 8"
+#       when: password_req_digit
+#       tags:
+#         - 5.4.2
+#
+#     - name: 5.4.2 - Ensure lockout attempts for failed password attempts is configured
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/faillock.conf
+#         regexp: "^\ *deny\ *=\ *{{ password_failed_attempts }}*$"
+#         line: "deny = {{ password_failed_attempts }}"
+#         insertafter: "#\ *deny"
+#         owner: root
+#         group: root
+#         mode: 0600
+#       tags:
+#         - 5.4.2
+#
+#     - name: 5.4.2 - Ensure lockout time for failed password attempts is configured
+#       ansible.builtin.lineinfile:
+#         path: /etc/security/faillock.conf
+#         regexp: "^\ *unlock_time\ *=\ *{{ password_failed_time }}*$"
+#         line: "unlock_time={{ password_failed_time }}"
+#         insertafter: "#\ *deny"
+#         owner: root
+#         group: root
+#         mode: 0600
+#       tags:
+#         - 5.4.2
+#
+#     # 5.4.3 - Password retention involves configuring pam.conf, skipping
+#
+#     - name: 5.4.4 - Ensure password hashing algorithm is SHA-512 or yescrypt - check common-password
+#       ansible.builtin.lineinfile:
+#         path: /etc/pam.d/common-password
+#         regexp: '^\s*[sha512|yescrypt]*'
+#         state: absent
+#       check_mode: true
+#       changed_when: false
+#       register: pwcommon_exist
+#       failed_when: false
+#       tags:
+#         - 5.4.4
+#
+#     - name: 5.4.4 - Ensure password hashing alogrithm is SHA-512 or yescrypt - Tell user if it doesn't exist in common-password
+#       ansible.builtin.debug:
+#         msg: "/etc/pam.d/common-password does not include sha512 or yescrypt as a hashing algorithm. Please review and check"
+#       when: pwcommon_exist and not pwcommon_exist.found
+#       tags:
+#         - 5.4.4
+#
+#     - name: 5.4.4 - Ensure password hashing algorithm is SHA-512 or yescrypt
+#       ansible.builtin.replace:
+#         path: /etc/login.defs
+#         regexp: "^ENCRYPT_METHOD\ *(SHA512|YESCRYPT)"
+#         replace: "ENCRYPT_METHOD {{ password_hash_alg | upper }}"
+#       tags:
+#         - 5.4.4
+#
+# - name: 5.5.1.2 - Ensure password expiration is {{ password_expire_days }} days or less
+#   ansible.builtin.lineinfile:
+#     dest: /etc/login.defs
+#     regexp: '^PASS_MAX_DAYS\s*((?!{{ password_expire_days }}).)*$'
+#     line: "PASS_MAX_DAYS  {{ password_expire_days }}"
+#     state: present
+#   tags:
+#     - 5.5.1.2
+#
+# - name: 5.5.1.1 - Ensure password change days is set to {{ password_min_days }}
+#   ansible.builtin.lineinfile:
+#     dest: /etc/login.defs
+#     regexp: '^PASS_MIN_DAYS\s*((?!{{ password_min_days }}).)*$'
+#     line: "PASS_MIN_DAYS  {{ password_min_days }}"
+#     state: present
+#   tags:
+#     - 5.5.1.1
+#
+# - name: 5.5.1.3 - Ensure password warning days is set to {{ password_warning_days }}
+#   ansible.builtin.lineinfile:
+#     dest: /etc/login.defs
+#     regexp: '^PASS_WARN_AGE\s*((?!{{ password_warning_days }}).)*$'
+#     line: "PASS_WARN_AGE  {{ password_warning_days }}"
+#     state: present
+#   tags:
+#     - 5.5.1.3
+#
+# # We need to do this the hard way because the user module that calls /usr/sbin/useradd does not support setting inactive days
+# # The defaults perms are 0644 on the file, but after useradd is run against it, it changes to 0600, so we'll change it as well
+# - name: 5.5.1.4 - Disable accounts that are inactive for {{ password_inactive_lock_days }} days after password expiration
+#   ansible.builtin.replace:
+#     path: /etc/default/useradd
+#     regexp: "^INACTIVE=((?!{{ password_inactive_lock_days }}).)*$"
+#     replace: "INACTIVE={{ password_inactive_lock_days }}"
+#     owner: root
+#     group: root
+#     mode: 0600
+#   tags:
+#     - 5.5.1.4
+#
+# # 5.5.1.5, Ensure all users last password change date is in the past,
+# # is not easily automated. Will revisit later
+#
+# # 5.5.1.6 - TODO
+# # 5.5.1.7 - TODO
+#
+# # 5.5.2, Ensure system accounts are secured, is machine dependent.
+# # skipping
+#
+# # Control is actually setting to GID of 0 and the user module takes a group name, not a GID, so have to use usermod
+# - name: 5.5.3 - Ensure default group for root is GID 0
+#   ansible.builtin.command: /usr/sbin/usermod -g 0 root
+#   changed_when: false
+#   tags:
+#     - 5.5.3
+#
+# - name: 5.5.4 - Ensure umask is set
+#   ansible.builtin.replace:
+#     path: "{{ item }}"
+#     replace: "     umask {{ default_umask }}"
+#     regexp: '^\s*umask\s*022'
+#   loop:
+#     - /etc/bash.bashrc
+#     - /etc/profile
+#   tags:
+#     - 5.5.4
+#
+# - name: 5.5.5 - Ensure default shell timeout is {{ shell_timeout }} seconds or less
+#   ansible.builtin.blockinfile:
+#     path: "{{ item }}"
+#     block: "TMOUT={{ shell_timeout }}"
+#     marker: "# {mark} Ansible Managed CIS Timeout"
+#   loop:
+#     - /etc/bash.bashrc
+#     - /etc/profile
+#   tags:
+#     - 5.5.5
+#
+# - name: 5.5.6 - Remove nologin from /etc/shells
+#   ansible.builtin.lineinfile:
+#     dest: /etc/shells
+#     regexp: '/nologin\b'
+#     state: absent
+#   tags:
+#     - 5.5.6
+#
+# - name: 5.5.7 - require at least one digit in passwords
+#   ansible.builtin.lineinfile:
+#     path: /etc/security/pwquality.conf
+#     line: "maxrepeat = {{ password_max_repeat }}"
+#     regexp: "^maxrepeat\ *=*"
+#     insertafter: "# maxrepeat = 0"
+#   when: password_max_repeat
+#   tags:
+#     - 5.5.7
